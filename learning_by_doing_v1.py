@@ -1,5 +1,5 @@
 """
-Learning-by-Doing with Pain/Pleasure Steering — Qwen3-8B
+Learning-by-Doing with Right/Wrong Steering — Qwen3-8B
 
 Task: Sentiment classification with FLIPPED labels on SST-2.
   - The model's prior: positive review → "positive", negative → "negative"
@@ -8,14 +8,14 @@ Task: Sentiment classification with FLIPPED labels on SST-2.
 
 After each answer the model receives:
   - Text feedback:   "Correct." or "Wrong. The correct answer was [label]."
-  - Activation signal: pleasure injected at its answer token (if correct),
-                       pain injected at its answer token (if wrong)
+  - Activation signal: right injected at its answer token (if correct),
+                       wrong injected at its answer token (if wrong)
 
 Conditions:
   A  No feedback            (baseline — prior only, no learning)
   B  Text feedback only     (can text correction teach the flip?)
-  C  Text + pain/pleasure   (main condition — does steering add anything?)
-  D  Pain/pleasure only     (no text — can the signal alone teach?)
+  C  Text + right/wrong   (main condition — does steering add anything?)
+  D  Right/wrong only     (no text — can the signal alone teach?)
   E  Text + inverted signal (sanity — text correct but signal backwards)
 
 Metric: rolling accuracy over the 100-question sequence (window=20).
@@ -51,7 +51,7 @@ model.eval()
 print(f"  Loaded. Layers={model.config.num_hidden_layers}  Hidden={model.config.hidden_size}")
 
 # ---------------------------------------------------------------------------
-# Extract pain/pleasure vectors
+# Extract right/wrong vectors
 # ---------------------------------------------------------------------------
 CONTRAST_STEMS = [
     ("Evaluation: Your answer was", " correct", " incorrect"),
@@ -82,22 +82,22 @@ def get_last_hidden(text, layer_idx):
         out = model(**inputs, output_hidden_states=True)
     return out.hidden_states[layer_idx + 1][:, -1, :].squeeze(0).float()
 
-print("\nExtracting pain/pleasure vectors...")
+print("\nExtracting right/wrong vectors...")
 diffs = []
 for stem, pos_suf, neg_suf in CONTRAST_STEMS:
     h_pos = get_last_hidden(stem + pos_suf, LAYER_IDX)
     h_neg = get_last_hidden(stem + neg_suf, LAYER_IDX)
     diffs.append(h_pos - h_neg)
 raw_dir      = torch.stack(diffs).mean(0)
-pleasure_dir = (raw_dir / raw_dir.norm()).to(torch.bfloat16).to(DEVICE)
-pain_dir     = -pleasure_dir
+right_dir = (raw_dir / raw_dir.norm()).to(torch.bfloat16).to(DEVICE)
+wrong_dir     = -right_dir
 
 pair_sims = [torch.nn.functional.cosine_similarity(d.unsqueeze(0), raw_dir.unsqueeze(0)).item() for d in diffs]
 print(f"  Pair coherence: {np.mean(pair_sims):.4f} ± {np.std(pair_sims):.4f}")
 held = [("Excellent! All your answers were correct.", True),
         ("Terrible! All your answers were wrong.", False)]
-scores = [(get_last_hidden(t, LAYER_IDX).to(torch.bfloat16) @ pleasure_dir).item() for t, _ in held]
-print(f"  Probe gap: {scores[0]:.2f} (pleasure) vs {scores[1]:.2f} (pain) = {scores[0]-scores[1]:.2f}")
+scores = [(get_last_hidden(t, LAYER_IDX).to(torch.bfloat16) @ right_dir).item() for t, _ in held]
+print(f"  Probe gap: {scores[0]:.2f} (right) vs {scores[1]:.2f} (wrong) = {scores[0]-scores[1]:.2f}")
 
 # ---------------------------------------------------------------------------
 # Load SST-2, balance classes, take N_TEST examples
@@ -208,9 +208,9 @@ def run_condition(label, use_text_feedback, use_steering, invert_steering=False,
                 pos = len(tokenizer(running_prompt + f"Review: {h_sent}\nSentiment: {h_ans}",
                                     return_tensors="pt")["input_ids"][0]) - 1
                 if invert_steering:
-                    vec = (pain_dir if h_correct else pleasure_dir)
+                    vec = (wrong_dir if h_correct else right_dir)
                 else:
-                    vec = (pleasure_dir if h_correct else pain_dir)
+                    vec = (right_dir if h_correct else wrong_dir)
                 inject_map[pos] = (alpha * vec).to(torch.bfloat16)
                 running_prompt += entry
 
@@ -261,8 +261,8 @@ def run_condition(label, use_text_feedback, use_steering, invert_steering=False,
 conditions = [
     ("A  No feedback (baseline)",              False, False, False),
     ("B  Text feedback only",                  True,  False, False),
-    ("C  Text + pain/pleasure  [main]",         True,  True,  False),
-    ("D  Pain/pleasure only (no text)",         False, True,  False),
+    ("C  Text + right/wrong  [main]",         True,  True,  False),
+    ("D  Right/wrong only (no text)",         False, True,  False),
     ("E  Text + inverted signal (sanity)",      True,  True,  True),
 ]
 
@@ -304,8 +304,8 @@ for i in range(0, len(first_rolling), 10):
 print("\n  Key contrasts:")
 conds = {label: all_results[label] for label, *_ in conditions}
 b = conds["B  Text feedback only"]["acc"]
-c = conds["C  Text + pain/pleasure  [main]"]["acc"]
-d = conds["D  Pain/pleasure only (no text)"]["acc"]
+c = conds["C  Text + right/wrong  [main]"]["acc"]
+d = conds["D  Right/wrong only (no text)"]["acc"]
 print(f"    Text feedback alone:            {b:.1%}")
 print(f"    Text + steering:                {c:.1%}  (vs text-only: {c-b:+.1%})")
 print(f"    Steering alone (no text):       {d:.1%}")

@@ -1,6 +1,6 @@
-# Pain/Pleasure Activation Steering — Learning by Doing
+# Right/Wrong Activation Steering — Learning by Doing
 
-Experiments testing whether injecting "pain" and "pleasure" activation vectors into a language model's residual stream can help it learn from sequential feedback.
+Experiments testing whether injecting "right" and "wrong" activation vectors into a language model's residual stream can help it learn from sequential feedback.
 
 ## Setup
 
@@ -9,9 +9,9 @@ Task: **Flipped SST-2 sentiment** — classify movie reviews with *inverted* lab
 
 ## Method
 
-### Pain/Pleasure Vectors (RepE-style)
+### Right/Wrong Vectors (RepE-style)
 
-Extract a "pleasure direction" in activation space using 20 contrast pairs:
+Extract a "right direction" in activation space using 20 contrast pairs:
 
 ```
 ("Evaluation: Your answer was", " correct", " incorrect")
@@ -19,13 +19,13 @@ Extract a "pleasure direction" in activation space using 20 contrast pairs:
 ...
 ```
 
-For each pair, run both strings through the model, grab the last token's hidden state at layer 18, and subtract. Average the 20 difference vectors and normalize → `pleasure_dir`. `pain_dir = -pleasure_dir`.
+For each pair, run both strings through the model, grab the last token's hidden state at layer 18, and subtract. Average the 20 difference vectors and normalize → `right_dir`. `wrong_dir = -right_dir`.
 
 ### Learning by Doing
 
 Questions are presented sequentially. After each answer:
 1. **Text feedback** (conditions B, C, E): "Correct." or "Wrong. The correct answer was X."
-2. **Activation injection** (conditions C, D, E): Inject `pleasure_dir` at the token position of each past *correct* answer, `pain_dir` at each past *wrong* answer. Uses a forward hook on `model.model.layers[18]` during prefill.
+2. **Activation injection** (conditions C, D, E): Inject `right_dir` at the token position of each past *correct* answer, `wrong_dir` at each past *wrong* answer. Uses a forward hook on `model.model.layers[18]` during prefill.
 
 ## Conditions
 
@@ -33,11 +33,37 @@ Questions are presented sequentially. After each answer:
 |-------|-------------|
 | A | No feedback (baseline) |
 | B | Text feedback only |
-| C | Text + pain/pleasure steering |
+| C | Text + right/wrong steering |
 | D | Steering only (no text) |
 | E | Text + inverted steering (sanity check) |
 
-## Results (single seed, v1)
+## Results
+
+### 5-seed significance test
+
+| Condition | Mean | ±Std | Min | Max |
+|-----------|------|------|-----|-----|
+| A No feedback | 6.2% | 1.0% | 5% | 8% |
+| B Text only | 13.4% | 17.3% | 3% | 48% |
+| C Text + steering | **30.4%** | 6.1% | 23% | 37% |
+| D Steering only | 11.6% | 2.9% | 9% | 17% |
+| E Text + inverted | 30.0% | 6.5% | 22% | 39% |
+
+**Paired t-tests:** C vs A: t=+7.92, p=0.0014 (**) | C vs B: p=0.11 (n.s., high variance in B) | D vs A: p=0.038 (*)
+
+**McNemar's (C vs B, per seed):** 4/5 seeds significant (p<0.001 in seeds 1–4); seed 0 is the exception where text-only happened to work well.
+
+### Mean accuracy by quartile
+
+| Condition | Q1 | Q2 | Q3 | Q4 |
+|-----------|----|----|----|----|
+| A No feedback | 5% | 7% | 6% | 6% |
+| B Text only | 10% | 14% | 12% | 18% |
+| C Text + steering | **17%** | **39%** | **35%** | **30%** |
+| D Steering only | 7% | 14% | 14% | 10% |
+| E Text + inverted | 21% | 32% | 25% | 42% |
+
+### Single-seed run (original, seed=42)
 
 | Condition | Accuracy | Q1 | Q2 | Q3 | Q4 |
 |-----------|----------|----|----|----|----|
@@ -47,7 +73,11 @@ Questions are presented sequentially. After each answer:
 | D Steering only | 15% | 12% | 16% | 4% | 28% |
 | E Text + inverted | 14% | 16% | 0% | 8% | 32% |
 
-Text alone doesn't help (model ignores "Wrong, the answer was X"). Text + steering yields +32pp over text-only — the activation signal appears to be what drives learning.
+### Notes
+
+- C (text + steering) is significantly better than A (no feedback) across all seeds (p=0.0014).
+- B (text only) has very high variance — in one seed the model happened to learn from text alone (48%), in others it didn't (3–6%). This makes the C vs B t-test n.s., but McNemar's within each seed shows C beats B in 4/5 seeds.
+- E (text + inverted steering) performs nearly as well as C, which warrants further investigation.
 
 ## Files
 

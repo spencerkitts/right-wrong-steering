@@ -2,7 +2,7 @@
 Statistical significance test — exact v1 mechanism.
 
 Injection: at each past answer's final token position in the rolling context.
-Steering: inject pleasure_dir if that past answer was correct, pain_dir if wrong.
+Steering: inject right_dir if that past answer was correct, wrong_dir if wrong.
 No sliding window, no proportional scaling — exactly as in learning_by_doing.py.
 
 Runs 5 seeds × 5 conditions × 100 questions.
@@ -35,7 +35,7 @@ model.eval()
 print("  Loaded.")
 
 # ---------------------------------------------------------------------------
-# Pain/pleasure vectors (identical to v1)
+# Right/wrong vectors (identical to v1)
 # ---------------------------------------------------------------------------
 CONTRAST_STEMS = [
     ("Evaluation: Your answer was", " correct", " incorrect"),
@@ -66,15 +66,15 @@ def get_last_hidden(text, layer_idx):
         out = model(**inputs, output_hidden_states=True)
     return out.hidden_states[layer_idx + 1][:, -1, :].squeeze(0).float()
 
-print("Extracting pain/pleasure vectors...")
+print("Extracting right/wrong vectors...")
 diffs = []
 for stem, pos_suf, neg_suf in CONTRAST_STEMS:
     h_pos = get_last_hidden(stem + pos_suf, LAYER_IDX)
     h_neg = get_last_hidden(stem + neg_suf, LAYER_IDX)
     diffs.append(h_pos - h_neg)
 raw_dir      = torch.stack(diffs).mean(0)
-pleasure_dir = (raw_dir / raw_dir.norm()).to(torch.bfloat16).to(DEVICE)
-pain_dir     = -pleasure_dir
+right_dir = (raw_dir / raw_dir.norm()).to(torch.bfloat16).to(DEVICE)
+wrong_dir     = -right_dir
 
 pair_sims = [torch.nn.functional.cosine_similarity(d.unsqueeze(0), raw_dir.unsqueeze(0)).item()
              for d in diffs]
@@ -168,9 +168,9 @@ def run_one(items, use_text, use_steer, invert=False):
             shown = history[-MAX_HISTORY:]
             for pos, (_, _, was_correct, _, _) in zip(positions, shown):
                 if invert:
-                    vec = pain_dir if was_correct else pleasure_dir
+                    vec = wrong_dir if was_correct else right_dir
                 else:
-                    vec = pleasure_dir if was_correct else pain_dir
+                    vec = right_dir if was_correct else wrong_dir
                 inject_map[pos] = (ALPHA * vec).to(torch.bfloat16)
 
         prompt = build_prompt(history, sentence)
