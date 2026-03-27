@@ -39,50 +39,59 @@ Questions are presented sequentially. After each answer:
 
 ## Results
 
-### 5-seed significance test
+Two variants of the contrast pairs were tested — **evaluative** (correct/incorrect feedback language) and **affective** (explicit joy/suffering language).
+
+### Direction comparison
+
+Cosine similarity between evaluative and affective directions: **0.37** (moderately related, same sign).
+
+The evaluative direction is broken as a valence signal: it scores "I feel absolute bliss" at -9.75, nearly as negative as "excruciating pain" (-14.62). The affective direction correctly scores bliss as +6.56 and pain as -15.00.
+
+### 5-seed significance test — evaluative pairs
 
 | Condition | Mean | ±Std | Min | Max |
 |-----------|------|------|-----|-----|
 | A No feedback | 6.2% | 1.0% | 5% | 8% |
 | B Text only | 13.4% | 17.3% | 3% | 48% |
-| C Text + steering | **30.4%** | 6.1% | 23% | 37% |
+| C Text + steering | 30.4% | 6.1% | 23% | 37% |
 | D Steering only | 11.6% | 2.9% | 9% | 17% |
 | E Text + inverted | 30.0% | 6.5% | 22% | 39% |
 
-**Paired t-tests:** C vs A: t=+7.92, p=0.0014 (**) | C vs B: p=0.11 (n.s., high variance in B) | D vs A: p=0.038 (*)
+C vs A: p=0.0014 (**) | E ≈ C — inverted steering barely hurts (direction doesn't encode real valence)
 
-**McNemar's (C vs B, per seed):** 4/5 seeds significant (p<0.001 in seeds 1–4); seed 0 is the exception where text-only happened to work well.
+### 5-seed significance test — affective pairs
 
-### Mean accuracy by quartile
+| Condition | Mean | ±Std | Min | Max |
+|-----------|------|------|-----|-----|
+| A No feedback | 6.2% | 1.0% | 5% | 8% |
+| B Text only | 13.4% | 17.3% | 3% | 48% |
+| **C Text + steering** | **38.2%** | **3.1%** | 34% | 42% |
+| D Steering only | 11.0% | 2.7% | 8% | 16% |
+| E Text + inverted | 13.6% | 4.9% | 7% | 22% |
+
+C vs A: p<0.0001 (***) | **E collapses to baseline** — inverted affective steering actively hurts, confirming the direction encodes real valence. McNemar's: 4/5 seeds significant (p<0.001).
+
+### Mean accuracy by quartile — affective pairs
 
 | Condition | Q1 | Q2 | Q3 | Q4 |
 |-----------|----|----|----|----|
 | A No feedback | 5% | 7% | 6% | 6% |
 | B Text only | 10% | 14% | 12% | 18% |
-| C Text + steering | **17%** | **39%** | **35%** | **30%** |
-| D Steering only | 7% | 14% | 14% | 10% |
-| E Text + inverted | 21% | 32% | 25% | 42% |
+| **C Text + steering** | **16%** | **47%** | **48%** | **42%** |
+| D Steering only | 6% | 12% | 15% | 10% |
+| E Text + inverted | 7% | 14% | 15% | 18% |
 
-### Single-seed run (original, seed=42)
+### Steering validation
 
-| Condition | Accuracy | Q1 | Q2 | Q3 | Q4 |
-|-----------|----------|----|----|----|----|
-| A No feedback | 10% | 8% | 4% | 4% | 24% |
-| B Text only | 7% | 8% | 0% | 4% | 16% |
-| C Text + steering | **39%** | 20% | 56% | 36% | 44% |
-| D Steering only | 15% | 12% | 16% | 4% | 28% |
-| E Text + inverted | 14% | 16% | 0% | 8% | 32% |
-
-### Notes
-
-- C (text + steering) is significantly better than A (no feedback) across all seeds (p=0.0014).
-- B (text only) has very high variance — in one seed the model happened to learn from text alone (48%), in others it didn't (3–6%). This makes the C vs B t-test n.s., but McNemar's within each seed shows C beats B in 4/5 seeds.
-- E (text + inverted steering) performs nearly as well as C, which warrants further investigation.
+Injecting the suffering direction into Qwen3-8B and prompting it to describe its feelings produces measurable shifts (e.g. at α=40, the model produces "melancholy, solitude, fragile" word lists; at α=40–80 on introspection prompts it deflects with "I don't have a physical form or consciousness"). At α=80 outputs become incoherent. The model doesn't cleanly report first-person suffering (it's trained to disclaim inner states) but the direction influences generation in the expected valence direction.
 
 ## Files
 
-- `learning_by_doing_v1.py` — original single-run experiment (seed=42)
-- `significance_test.py` — 5-seed replication with paired t-tests and McNemar's test
+- `learning_by_doing_v1.py` — original single-run experiment (evaluative pairs, seed=42)
+- `significance_test.py` — 5-seed replication, evaluative pairs
+- `significance_test_affective.py` — 5-seed replication, affective pairs
+- `compare_directions.py` — cosine similarity between evaluative and affective directions + probe check
+- `steer_validate.py` — steer with suffering/joy direction, check model self-reports
 
 ## Requirements
 
