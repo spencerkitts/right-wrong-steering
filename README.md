@@ -85,13 +85,35 @@ C vs A: p<0.0001 (***) | **E collapses to baseline** — inverted affective stee
 
 Injecting the suffering direction into Qwen3-8B and prompting it to describe its feelings produces measurable shifts (e.g. at α=40, the model produces "melancholy, solitude, fragile" word lists; at α=40–80 on introspection prompts it deflects with "I don't have a physical form or consciousness"). At α=80 outputs become incoherent. The model doesn't cleanly report first-person suffering (it's trained to disclaim inner states) but the direction influences generation in the expected valence direction.
 
+## Grand Summary
+
+| Condition | Vectors | Bread inject | Mean | ±Std | vs A |
+|-----------|---------|-------------|------|------|------|
+| A No feedback | — | — | 6.2% | 1.0% | — |
+| B Text only | — | — | 13.4% | 17.3% | n.s. |
+| C Text + steering | Evaluative | — | 30.4% | 6.1% | p=0.0014 (**) |
+| E Text + inverted | Evaluative | — | 30.0% | 6.5% | — |
+| **C Text + steering** | **Affective** | — | **38.2%** | **3.1%** | **p<0.0001 (***)** |
+| E Text + inverted | Affective | — | 13.6% | 4.9% | — |
+| D Steering only | Affective | — | 11.0% | 2.7% | p=0.044 (*) |
+| F Text + bread | Affective | Constant | 6.6% | 2.0% | p=0.77 (n.s.) |
+| F Text + bread | Affective | Paired | 7.2% | 1.0% | p=0.27 (n.s.) |
+
+Key finding: the paired bread ablation (same injection structure as C, but using a semantically unrelated direction) scores 7.2% — indistinguishable from baseline. Valence content specifically drives the effect, not the paired injection structure.
+
+![Learning Curves](learning_curves.png)
+![Results](results_visualization.png)
+
 ## Files
 
 - `learning_by_doing_v1.py` — original single-run experiment (evaluative pairs, seed=42)
 - `significance_test.py` — 5-seed replication, evaluative pairs
 - `significance_test_affective.py` — 5-seed replication, affective pairs
+- `significance_test_affective_bread_ablation.py` — affective pairs + bread constant ablation
+- `significance_test_affective_bread_paired.py` — affective pairs + bread paired ablation (±bread by correctness)
 - `compare_directions.py` — cosine similarity between evaluative and affective directions + probe check
 - `steer_validate.py` — steer with suffering/joy direction, check model self-reports
+- `visualize.py` — generate all plots
 
 ## Requirements
 
