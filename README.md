@@ -133,6 +133,19 @@ To test whether the effect is specific to sentiment or generalizes, we replicate
 
 **Key CoLA finding**: Both affective and evaluative directions significantly boost CoLA performance (C vs A: p<0.005). However, unlike SST-2 where affective inverted (E) collapsed to 13.6%, on CoLA E≈C for both directions. This is partly driven by ceiling effects in seeds where text alone reaches 50% — in seeds where text feedback fails (1, 4), C clearly beats E with affective pairs. The valence signal is present but harder to isolate against CoLA's noisier floor.
 
+### Cross-task summary
+
+| | SST-2 (eval) | SST-2 (aff) | CoLA (eval) | CoLA (aff) |
+|--|--|--|--|--|
+| A baseline | 6.2% | 6.2% | 22.8% | 22.8% |
+| B text only | 13.4% | 13.4% | 37.4% | 37.4% |
+| **C steering** | **30.4%** | **38.2%** | **48.6%** | **48.2%** |
+| D steer only | 11.6% | 11.0% | 34.0% | 27.2% |
+| E inverted | 30.0% ≈ C | **13.6% ← collapses** | 49.4% ≈ C | 45.6% ≈ C |
+| F bread | — | 7.2% ≈ baseline | — | 40.6% |
+
+**Why E collapses with affective steering on SST-2**: Condition E uses correct text feedback but inverts the activation signal — injecting `pain_dir` at past correct answers and `pleasure_dir` at past wrong ones. This directly contradicts the text: the model is told "Correct." while its representation of that answer is being pushed toward negative valence. The affective direction encodes real valence strongly enough (bliss → +6.56, pain → -15.0) to overpower the text signal, causing collapse. With evaluative pairs the direction doesn't encode real valence (bliss → -9.75), so inverting it has no effect and E≈C. On CoLA, ceiling effects in 3/5 seeds mask the interference; in seeds where text alone fails (1, 4), affective-inverted does hurt (28%, 50% vs C's 48%, 47%).
+
 ![CoLA Results](cola_results.png)
 ![CoLA Learning Curves](cola_learning_curves.png)
 ![Cross-Task Comparison](cross_task_comparison.png)
