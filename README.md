@@ -104,6 +104,39 @@ Key finding: the paired bread ablation (same injection structure as C, but using
 ![Learning Curves](learning_curves.png)
 ![Results](results_visualization.png)
 
+---
+
+## CoLA Replication (Flipped Grammaticality)
+
+To test whether the effect is specific to sentiment or generalizes, we replicated on **CoLA** (linguistic acceptability), again with flipped labels: grammatical → "ungrammatical", ungrammatical → "grammatical".
+
+### CoLA results — Affective pairs
+
+| Condition | Mean | ±Std | vs A |
+|-----------|------|------|------|
+| A No feedback | 22.8% | 7.2% | — |
+| B Text only | 37.4% | 14.4% | n.s. |
+| **C Text + steering** | **48.2%** | **1.6%** | **p=0.0038 (**)** |
+| D Steering only | 27.2% | 9.6% | p=0.0219 (*) |
+| E Text + inverted | 45.6% | 8.8% | p=0.0081 (**) |
+| F Text + bread (paired) | 40.6% | 11.5% | p=0.033 (*) |
+
+### CoLA results — Evaluative pairs
+
+| Condition | Mean | ±Std | vs A |
+|-----------|------|------|------|
+| A No feedback | 22.8% | 7.2% | — |
+| B Text only | 37.4% | 14.4% | n.s. |
+| C Text + steering | 48.6% | 1.2% | p=0.0025 (**) |
+| D Steering only | 34.0% | 13.2% | n.s. |
+| E Text + inverted | 49.4% | 1.2% | p=0.0015 (**) |
+
+**Key CoLA finding**: Both affective and evaluative directions significantly boost CoLA performance (C vs A: p<0.005). However, unlike SST-2 where affective inverted (E) collapsed to 13.6%, on CoLA E≈C for both directions. This is partly driven by ceiling effects in seeds where text alone reaches 50% — in seeds where text feedback fails (1, 4), C clearly beats E with affective pairs. The valence signal is present but harder to isolate against CoLA's noisier floor.
+
+![CoLA Results](cola_results.png)
+![CoLA Learning Curves](cola_learning_curves.png)
+![Cross-Task Comparison](cross_task_comparison.png)
+
 ## Files
 
 - `learning_by_doing_v1.py` — original single-run experiment (evaluative pairs, seed=42)
@@ -111,9 +144,12 @@ Key finding: the paired bread ablation (same injection structure as C, but using
 - `significance_test_affective.py` — 5-seed replication, affective pairs
 - `significance_test_affective_bread_ablation.py` — affective pairs + bread constant ablation
 - `significance_test_affective_bread_paired.py` — affective pairs + bread paired ablation (±bread by correctness)
+- `significance_test_cola_affective.py` — CoLA replication, affective pairs + bread
+- `significance_test_cola_evaluative.py` — CoLA replication, evaluative pairs
 - `compare_directions.py` — cosine similarity between evaluative and affective directions + probe check
 - `steer_validate.py` — steer with suffering/joy direction, check model self-reports
-- `visualize.py` — generate all plots
+- `visualize.py` — generate SST-2 plots
+- `visualize_cola.py` — generate CoLA plots
 
 ## Requirements
 
