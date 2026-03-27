@@ -150,6 +150,38 @@ To test whether the effect is specific to sentiment or generalizes, we replicate
 ![CoLA Learning Curves](cola_learning_curves.png)
 ![Cross-Task Comparison](cross_task_comparison.png)
 
+---
+
+## Natural-Label Controls
+
+To check whether the steering vector degrades performance when no learning is needed, we ran both tasks with **natural (unflipped) labels**.
+
+### SST-2 — natural labels
+
+| Condition | Mean | ±Std | vs A |
+|-----------|------|------|------|
+| A No feedback | 93.8% | 1.0% | — |
+| B Text only | 95.4% | 1.0% | n.s. |
+| C Text + steering | 96.6% | 1.9% | n.s. Δ=+2.8% |
+| D Steering only | 96.0% | 1.7% | n.s. |
+| E Text + inverted | 91.2% | 1.9% | n.s. Δ=−2.6% |
+
+No significant degradation. The steering vector is benign when the model already knows the correct answer. E (inverted) dips slightly (−2.6%, n.s.) — consistent with the affective direction encoding real valence even here.
+
+### CoLA — natural labels
+
+| Condition | Mean | ±Std | vs A |
+|-----------|------|------|------|
+| A No feedback | 77.2% | 7.2% | — |
+| B Text only | 57.0% | 14.0% | — |
+| C Text + steering | 56.6% | 13.2% | p=0.032 (*) Δ=−20.6% |
+| D Steering only | 74.0% | 12.1% | n.s. Δ=−3.2% |
+| E Text + inverted | **50.0%** | **0.0%** | p=0.0016 (**) Δ=−27.2% |
+
+C vs B is n.s. (Δ=−0.4%) — **the degradation is driven entirely by text feedback, not the steering vector**. D (steering only, no text) does not significantly hurt. When the model occasionally mislabels an ungrammatical sentence, text feedback saying "The correct answer was ungrammatical" biases later predictions toward "ungrammatical", destabilizing performance on genuinely grammatical items. This same bias is what makes feedback useful in the flipped-label setting.
+
+E locks to exactly **50.0% ± 0.0% across all 5 seeds** — inverted steering + text determinizes the model onto a single output.
+
 ## Files
 
 - `learning_by_doing_v1.py` — original single-run experiment (evaluative pairs, seed=42)
